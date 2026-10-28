@@ -51,6 +51,11 @@ class CoinDash extends Phaser.Scene {
 
   create() {
     const c = COIN_DASH;
+    const selectedLevel = typeof document === 'undefined' ? 1
+      : Number(document.getElementById('difficulty-level')?.value || 1);
+    this.level = Number.isInteger(selectedLevel) && selectedLevel >= 1 && selectedLevel <= c.levels.length
+      ? selectedLevel : 1;
+    this.levelSettings = c.levels[this.level - 1];
     this.score = 0;
     this.bestScore = readHighScore();
     this.finished = false;
@@ -81,12 +86,12 @@ class CoinDash extends Phaser.Scene {
     this.placeSpeedPowerUp();
     this.physics.add.overlap(this.player, this.speedPowerUp, () => this.collectSpeedPowerUp());
     this.drones = this.physics.add.group();
-    for (let i = 0; i < c.droneCount; i++) {
-      const drone = this.add.rectangle(90 + i * 270, 100, 26, 26, c.colors.drone);
+    for (let i = 0; i < this.levelSettings.droneCount; i++) {
+      const drone = this.add.rectangle((i + 1) * c.width / (this.levelSettings.droneCount + 1), 100, 26, 26, c.colors.drone);
       this.drones.add(drone);
       drone.body.setCollideWorldBounds(true).setBounce(1, 1);
       const angle = (35 + i * 105) * Math.PI / 180;
-      drone.body.setVelocity(Math.cos(angle) * c.droneSpeed, Math.sin(angle) * c.droneSpeed);
+      drone.body.setVelocity(Math.cos(angle) * this.levelSettings.droneSpeed, Math.sin(angle) * this.levelSettings.droneSpeed);
     }
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
@@ -175,7 +180,7 @@ class CoinDash extends Phaser.Scene {
     const direction = new Phaser.Math.Vector2(dx, dy).normalize().scale(speed);
     this.player.body.setVelocity(direction.x, direction.y);
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
-    this.hud.setText(`Coins: ${this.score}  Best: ${this.bestScore}  Time: ${seconds}s`);
+    this.hud.setText(`L${this.level}  Coins: ${this.score}  Best: ${this.bestScore}  Time: ${seconds}s`);
     if (seconds === 0) this.finish('Time is up!');
   }
 
@@ -206,3 +211,11 @@ window.coinDashGame = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
   scene: CoinDash
 });
+
+// The selector is outside the scene so it remains available after a round ends.
+if (typeof document !== 'undefined') {
+  document.getElementById('difficulty-level')?.addEventListener('change', () => {
+    const gameScene = window.coinDashGame?.scene?.getScene?.('CoinDash');
+    gameScene?.scene?.restart();
+  });
+}
