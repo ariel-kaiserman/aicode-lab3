@@ -1,4 +1,31 @@
 /* global Phaser, COIN_DASH */
+// Sounds are synthesized with Web Audio; the context is created lazily on first use.
+let audioCtx = null;
+function playTones(notes, type) {
+  const s = COIN_DASH.sound;
+  if (!s || !s.enabled) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = audioCtx || new AC();
+    if (audioCtx.state === 'suspended') { const p = audioCtx.resume(); if (p) p.catch(() => {}); }
+    const peak = Math.max(s.volume, 0.0001);
+    let t = audioCtx.currentTime;
+    for (const [freq, dur] of notes) {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(peak, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+      t += dur * 0.8;
+    }
+  } catch (e) { /* sound is optional */ }
+}
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -30,6 +57,7 @@ class CoinDash extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.score++;
+      playTones([[988, 0.08], [1319, 0.2]], 'triangle');
       this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish('A drone caught you!'));
@@ -85,6 +113,8 @@ class CoinDash extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.physics.pause();
+    if (reason === 'Time is up!') playTones([[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.35]], 'triangle');
+    else playTones([[220, 0.16], [165, 0.16], [110, 0.4]], 'sawtooth');
     const c = COIN_DASH;
     this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
     this.add.text(c.width / 2, c.height / 2,
