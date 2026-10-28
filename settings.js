@@ -17,5 +17,5 @@ window.COIN_DASH = {
     { droneCount: 6, droneSpeed: 180 }
   ],
   sound: { enabled: true, volume: 0.2 },
-  colors: { background: 0x101c31, player: 0x71e8ce, coin: 0xffd166, speedPowerUp: 0x5ac8ff, drone: 0xff657a }
+  colors: { background: 0x101c31, player: 0x71e8ce, player2: 0xffa94d, coin: 0xffd166, speedPowerUp: 0x5ac8ff, drone: 0xff657a }
 };
