@@ -9,6 +9,13 @@ window.COIN_DASH = {
   speedPowerUpRespawnSeconds: 8,
   droneSpeed: 105,
   droneCount: 3,
+  levels: [
+    { droneCount: 2, droneSpeed: 80 },
+    { droneCount: 3, droneSpeed: 105 },
+    { droneCount: 4, droneSpeed: 130 },
+    { droneCount: 5, droneSpeed: 155 },
+    { droneCount: 6, droneSpeed: 180 }
+  ],
   sound: { enabled: true, volume: 0.2 },
   colors: { background: 0x101c31, player: 0x71e8ce, coin: 0xffd166, speedPowerUp: 0x5ac8ff, drone: 0xff657a }
 };
