@@ -134,6 +134,7 @@ class CoinDash extends Phaser.Scene {
         this.mode === 'duo' ? `A drone caught Player ${index + 1}!` : 'A drone caught you!'
       ));
     });
+    this.createChaser();
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart({ mode: this.mode, level: this.level }));
@@ -141,6 +142,36 @@ class CoinDash extends Phaser.Scene {
       { font: '24px monospace', color: '#ffffff', backgroundColor: '#0a1120', padding: { x: 24, y: 16 } }
     ).setOrigin(0.5).setVisible(false);
     this.input.keyboard.on('keydown-P', event => { if (!event || !event.repeat) this.togglePause(); });
+  }
+
+  createChaser() {
+    const c = COIN_DASH;
+    this.chaser = this.add.rectangle(c.width - 50, c.height - 50, 24, 24, c.chaser.color);
+    this.physics.add.existing(this.chaser);
+    this.chaser.body.setCollideWorldBounds(true);
+    this.chaserSpeed = Math.min(c.chaser.maxSpeed,
+      c.chaser.baseSpeed + (this.level - 1) * c.chaser.speedPerLevel);
+    this.players.forEach((player, index) => {
+      this.physics.add.overlap(player, this.chaser, () => {
+        if (this.finished || this.paused) return;
+        this.finish(this.mode === 'duo'
+          ? `The purple chaser caught Player ${index + 1}!` : 'The purple chaser caught you!');
+      });
+    });
+  }
+
+  updateChaser() {
+    if (this.finished || this.paused) return;
+    let nearest = this.players[0];
+    let distance = Infinity;
+    for (const player of this.players) {
+      const nextDistance = Math.hypot(player.x - this.chaser.x, player.y - this.chaser.y);
+      if (nextDistance < distance) { nearest = player; distance = nextDistance; }
+    }
+    // Normalize direction so diagonal pursuit never exceeds the configured speed.
+    const scale = distance > 0 ? this.chaserSpeed / distance : 0;
+    this.chaser.body.setVelocity((nearest.x - this.chaser.x) * scale,
+      (nearest.y - this.chaser.y) * scale);
   }
 
   collectCoin(index = 0) {
@@ -210,6 +241,7 @@ class CoinDash extends Phaser.Scene {
 
   update() {
     if (this.finished || this.paused) return;
+    this.updateChaser();
     const boosts = [this.boostUntil, this.boostUntil2].map(until =>
       Math.max(0, Math.ceil((until - this.time.now) / 1000)));
     if (!this.speedPowerUp.body.enable && this.time.now >= this.powerUpRespawnAt) {
