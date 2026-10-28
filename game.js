@@ -166,7 +166,20 @@ class CoinDash extends Phaser.Scene {
   updatePulseEnemy() {
     if (this.finished || this.paused) return;
     const pulse = COIN_DASH.pulseEnemy;
-    const phase = (this.time.now - this.pulseStartedAt) / (pulse.cycleSeconds * 1000);
+    const elapsed = (this.time.now - this.pulseStartedAt) / 1000;
+    const phase = elapsed / pulse.cycleSeconds;
+    // Reflect the path inside a margin for its largest size, including the HUD.
+    // The pause-adjusted clock keeps movement and pulsing frozen together.
+    const reflect = (start, distance, min, max) => {
+      const span = max - min;
+      const offset = ((start - min + distance) % (2 * span) + 2 * span) % (2 * span);
+      return min + (offset <= span ? offset : 2 * span - offset);
+    };
+    const c = COIN_DASH;
+    this.pulseEnemy.setPosition(
+      reflect(c.width * 0.25, elapsed * pulse.speed * 0.8, pulse.maxRadius, c.width - pulse.maxRadius),
+      reflect(c.height - 90, -elapsed * pulse.speed * 0.6, 64 + pulse.maxRadius, c.height - pulse.maxRadius)
+    );
     const radius = Math.round(pulse.minRadius + (pulse.maxRadius - pulse.minRadius)
       * (1 - Math.cos(phase * Math.PI * 2)) / 2);
     // Arc.setRadius updates its display origin. Match the body to that new origin;

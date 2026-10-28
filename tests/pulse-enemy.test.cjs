@@ -80,20 +80,33 @@ assert.ok(pulse.y+c.pulseEnemy.maxRadius<=c.height);
 for(const player of scene.players) {
   assert.ok(Math.hypot(player.x-pulse.x,player.y-pulse.y)>c.pulseEnemy.maxRadius+24);
 }
+const initialPosition={x:pulse.x,y:pulse.y};
 const start=scene.pulseStartedAt;
 scene.time.now=start+c.pulseEnemy.cycleSeconds*1000/2;
 scene.updatePulseEnemy();checkCircle(c.pulseEnemy.maxRadius);
+assert.notDeepEqual({x:pulse.x,y:pulse.y},initialPosition,'enemy moves while pulsing');
 scene.time.now=start+c.pulseEnemy.cycleSeconds*1000;
 scene.updatePulseEnemy();checkCircle(c.pulseEnemy.minRadius);
 scene.time.now=start+c.pulseEnemy.cycleSeconds*1000/4;
 scene.updatePulseEnemy();checkCircle(Math.round((c.pulseEnemy.minRadius+c.pulseEnemy.maxRadius)/2));
 const oldRadius=pulse.radius;
+const pausedPosition={x:pulse.x,y:pulse.y};
 scene.togglePause();scene.time.now+=10000;
 scene.update();scene.updatePulseEnemy();checkCircle(oldRadius);
+assert.deepEqual({x:pulse.x,y:pulse.y},pausedPosition,'pause freezes movement');
 scene.togglePause();scene.updatePulseEnemy();checkCircle(oldRadius);
+assert.deepEqual({x:pulse.x,y:pulse.y},pausedPosition,'resume preserves position');
 scene.time.now+=c.pulseEnemy.cycleSeconds*1000/4;
 scene.updatePulseEnemy();checkCircle(c.pulseEnemy.maxRadius);
+for (let ms=0;ms<45000;ms+=137) {
+  scene.time.now=scene.pulseStartedAt+ms;scene.updatePulseEnemy();
+  assert.ok(pulse.x>=c.pulseEnemy.maxRadius && pulse.x<=c.width-c.pulseEnemy.maxRadius);
+  assert.ok(pulse.y>=64+c.pulseEnemy.maxRadius && pulse.y<=c.height-c.pulseEnemy.maxRadius);
+}
+scene.time.now=scene.pulseStartedAt+c.pulseEnemy.cycleSeconds*500;scene.updatePulseEnemy();
+const finishedPosition={x:pulse.x,y:pulse.y};
 scene.finish('Done');scene.time.now+=750;scene.updatePulseEnemy();checkCircle(c.pulseEnemy.maxRadius);
+assert.deepEqual({x:pulse.x,y:pulse.y},finishedPosition,'finish freezes movement');
 scene.create({mode:'duo'});
 assert.equal(scene.pulseEnemy.radius,c.pulseEnemy.minRadius,'restart resets cycle');
 assert.notEqual(scene.pulseEnemy,pulse,'restart creates a fresh enemy');
