@@ -19,6 +19,33 @@ function saveHighScore(score) {
   return bestScoreInMemory;
 }
 
+// Sounds are synthesized with Web Audio; the context is created lazily on first use.
+let audioCtx = null;
+function playTones(notes, type) {
+  const s = COIN_DASH.sound;
+  if (!s || !s.enabled) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = audioCtx || new AC();
+    if (audioCtx.state === 'suspended') { const p = audioCtx.resume(); if (p) p.catch(() => {}); }
+    const peak = Math.max(s.volume, 0.0001);
+    let t = audioCtx.currentTime;
+    for (const [freq, dur] of notes) {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(peak, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+      t += dur * 0.8;
+    }
+  } catch (e) { /* sound is optional */ }
+}
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -29,6 +56,7 @@ class CoinDash extends Phaser.Scene {
     this.finished = false;
     this.boostUntil = 0;
     this.powerUpRespawnAt = 0;
+    this.paused = false;
     this.deadline = this.time.now + c.roundSeconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
@@ -64,12 +92,35 @@ class CoinDash extends Phaser.Scene {
       if (this.finished) return;
       this.score++;
       this.bestScore = saveHighScore(this.score);
+      playTones([[988, 0.08], [1319, 0.2]], 'triangle');
       this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish('A drone caught you!'));
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    this.pauseOverlay = this.add.text(c.width / 2, c.height / 2, 'Paused — press P to resume',
+      { font: '24px monospace', color: '#ffffff', backgroundColor: '#0a1120', padding: { x: 24, y: 16 } }
+    ).setOrigin(0.5).setVisible(false);
+    this.input.keyboard.on('keydown-P', () => this.togglePause());
+  }
+
+  togglePause() {
+    if (this.finished) return;
+    this.paused = !this.paused;
+    // Freeze the round clock by keeping the remaining time across the pause.
+    if (this.paused) {
+      this.remaining = this.deadline - this.time.now;
+      this.pausedAt = this.time.now;
+      this.physics.pause();
+    } else {
+      const pauseDuration = this.time.now - this.pausedAt;
+      this.deadline = this.time.now + this.remaining;
+      if (this.boostUntil > this.pausedAt) this.boostUntil += pauseDuration;
+      if (this.powerUpRespawnAt > this.pausedAt) this.powerUpRespawnAt += pauseDuration;
+      this.physics.resume();
+    }
+    this.pauseOverlay.setVisible(this.paused);
   }
 
   placeCoin() {
@@ -109,7 +160,7 @@ class CoinDash extends Phaser.Scene {
   }
 
   update() {
-    if (this.finished) return;
+    if (this.finished || this.paused) return;
     const boostSeconds = Math.max(0, Math.ceil((this.boostUntil - this.time.now) / 1000));
     if (!this.speedPowerUp.body.enable && this.time.now >= this.powerUpRespawnAt) {
       this.placeSpeedPowerUp();
@@ -135,6 +186,8 @@ class CoinDash extends Phaser.Scene {
     this.boostUntil = 0;
     this.boostHud.setText('');
     this.player.setFillStyle(COIN_DASH.colors.player);
+    if (reason === 'Time is up!') playTones([[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.35]], 'triangle');
+    else playTones([[220, 0.16], [165, 0.16], [110, 0.4]], 'sawtooth');
     const c = COIN_DASH;
     this.add.rectangle(c.width / 2, c.height / 2, 460, 190, 0x0a1120, 0.95);
     this.add.text(c.width / 2, c.height / 2,

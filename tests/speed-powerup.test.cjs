@@ -24,7 +24,7 @@ class Scene {
   constructor() {
     this.time = {now: 100};
     this.add = {grid() {}, rectangle:object, circle:object, text:object};
-    this.physics = {world:{setBounds(){}}, pause(){this.paused=true;}, add:{
+    this.physics = {world:{setBounds(){}}, pause(){this.paused=true;}, resume(){this.paused=false;}, add:{
       existing(){}, group:()=>({add(){}}), overlap(a,b,fn){overlaps.push({a,b,fn});}
     }};
     this.input = {keyboard:{
@@ -61,6 +61,17 @@ assert.equal(scene.player.body.velocity.x,c.playerSpeed*c.speedBoostMultiplier);
 assert.match(scene.boostHud.text,/5s/);
 scene.keys.W.isDown=true;scene.update();
 assert.ok(Math.abs(Math.hypot(...Object.values(scene.player.body.velocity))-c.playerSpeed*c.speedBoostMultiplier)<1e-8);
+const priorBoost=scene.boostUntil, priorRespawn=scene.powerUpRespawnAt, priorDeadline=scene.deadline;
+scene.togglePause();
+scene.time.now+=10000;scene.update();
+assert.equal(scene.boostUntil,priorBoost,'paused update leaves boost unchanged');
+assert.equal(scene.speedPowerUp.body.enable,false,'paused update cannot respawn pickup');
+scene.togglePause();
+assert.equal(scene.boostUntil,priorBoost+10000,'pause freezes boost duration');
+assert.equal(scene.powerUpRespawnAt,priorRespawn+10000,'pause freezes pickup cooldown');
+assert.equal(scene.deadline,priorDeadline+10000,'pause freezes round timer');
+assert.equal(scene.physics.paused,false);
+scene.update();assert.match(scene.boostHud.text,/5s/);
 const boostEnd=scene.boostUntil;
 scene.time.now+=100;collect();assert.equal(scene.boostUntil,boostEnd,'disabled pickup cannot stack');
 scene.time.now=boostEnd;scene.update();
