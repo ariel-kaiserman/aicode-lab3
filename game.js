@@ -114,10 +114,16 @@ class CoinDash extends Phaser.Scene {
       this.player2.body.setCollideWorldBounds(true);
       this.players.push(this.player2);
     }
-    this.coin = sticker(this.add.circle(100, 100, 9, k.coin));
-    this.physics.add.existing(this.coin);
-    this.coin.body.setCircle(9);
-    this.placeCoin();
+    // Two players share the field, so duo rounds keep several coins out at once.
+    this.coins = [];
+    for (let i = 0; i < (this.mode === 'duo' ? c.duoCoinCount : 1); i++) {
+      const coin = sticker(this.add.circle(100, 100, 9, k.coin));
+      this.physics.add.existing(coin);
+      coin.body.setCircle(9);
+      this.coins.push(coin);
+    }
+    this.coin = this.coins[0];
+    this.coins.forEach(coin => this.placeCoin(coin));
     this.speedPowerUp = sticker(this.add.rectangle(0, 0, 24, 24, k.speedPowerUp), 7);
     this.physics.add.existing(this.speedPowerUp);
     this.speedPowerUp.body.setAllowGravity(false).setImmovable(true);
@@ -136,7 +142,7 @@ class CoinDash extends Phaser.Scene {
       drone.body.setVelocity(Math.cos(angle) * this.levelSettings.droneSpeed, Math.sin(angle) * this.levelSettings.droneSpeed);
     }
     this.players.forEach((player, index) => {
-      this.physics.add.overlap(player, this.coin, () => this.collectCoin(index));
+      this.coins.forEach(coin => this.physics.add.overlap(player, coin, () => this.collectCoin(index, coin)));
       this.physics.add.overlap(player, this.drones, () => this.finish(
         this.mode === 'duo' ? `A drone caught Player ${index + 1}!` : 'A drone caught you!'
       ));
@@ -150,13 +156,13 @@ class CoinDash extends Phaser.Scene {
     this.input.keyboard.on('keydown-P', event => { if (!event || !event.repeat) this.togglePause(); });
   }
 
-  collectCoin(index = 0) {
+  collectCoin(index = 0, coin = this.coin) {
     if (this.finished || this.paused) return;
     if (index === 1) this.score2++;
     else this.score++;
     this.bestScore = saveHighScore(Math.max(this.score, this.score2), this.mode);
     playTones([[988, 0.08], [1319, 0.2]], 'triangle');
-    this.placeCoin();
+    this.placeCoin(coin);
   }
 
   // A rounded paper card with a soft offset shadow, centred on the field.
@@ -187,16 +193,17 @@ class CoinDash extends Phaser.Scene {
     this.pauseOverlay.setVisible(this.paused);
   }
 
-  placeCoin() {
+  placeCoin(coin = this.coin) {
     const c = COIN_DASH;
-    // Avoid spawning the next coin directly underneath the player.
+    // Avoid spawning the next coin directly underneath a player or on top of another coin.
     let x, y;
     do {
       x = Phaser.Math.Between(25, c.width - 25);
       y = Phaser.Math.Between(90, c.height - 25);
-    } while (this.players.some(player => Phaser.Math.Distance.Between(x, y, player.x, player.y) < 60));
-    this.coin.setPosition(x, y);
-    this.coin.body.reset(x, y);
+    } while (this.players.some(player => Phaser.Math.Distance.Between(x, y, player.x, player.y) < 60)
+      || this.coins.some(other => other !== coin && Phaser.Math.Distance.Between(x, y, other.x, other.y) < 40));
+    coin.setPosition(x, y);
+    coin.body.reset(x, y);
   }
 
   placeSpeedPowerUp() {
@@ -206,7 +213,7 @@ class CoinDash extends Phaser.Scene {
       x = Phaser.Math.Between(30, c.width - 30);
       y = Phaser.Math.Between(95, c.height - 30);
     } while (this.players.some(player => Phaser.Math.Distance.Between(x, y, player.x, player.y) < 80)
-      || Phaser.Math.Distance.Between(x, y, this.coin.x, this.coin.y) < 40);
+      || this.coins.some(coin => Phaser.Math.Distance.Between(x, y, coin.x, coin.y) < 40));
     this.speedPowerUp.setPosition(x, y).setVisible(true);
     this.speedPowerUp.body.reset(x, y);
     this.speedPowerUp.body.enable = true;

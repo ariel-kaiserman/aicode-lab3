@@ -9,6 +9,7 @@ window.COIN_DASH = {
   speedPowerUpRespawnSeconds: 8,
   droneSpeed: 105,
   droneCount: 3,
+  duoCoinCount: 3,
   levels: [
     { droneCount: 2, droneSpeed: 80 },
     { droneCount: 3, droneSpeed: 105 },
