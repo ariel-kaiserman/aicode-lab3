@@ -16,6 +16,7 @@ window.COIN_DASH = {
     { droneCount: 5, droneSpeed: 155 },
     { droneCount: 6, droneSpeed: 180 }
   ],
+  pulseEnemy: { minRadius: 12, maxRadius: 34, cycleSeconds: 3, color: 0xff8c42 },
   sound: { enabled: true, volume: 0.2 },
   colors: { background: 0x101c31, player: 0x71e8ce, player2: 0xffa94d, coin: 0xffd166, speedPowerUp: 0x5ac8ff, drone: 0xff657a }
 };

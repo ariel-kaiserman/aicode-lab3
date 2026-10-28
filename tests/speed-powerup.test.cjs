@@ -9,10 +9,10 @@ function object(x, y) {
     setPosition(x, y) { this.x = x; this.y = y; return this; },
     setVisible(value) { this.visible = value; return this; },
     setOrigin() { return this; }, setText(value) { this.text = value; return this; },
-    setFillStyle(value) { this.fill = value; return this; }
+    setRadius() { return this; }, setFillStyle(value) { this.fill = value; return this; }
   };
   obj.body = { enable: true, setCollideWorldBounds() { return this; },
-    setCircle() { return this; }, setAllowGravity() { return this; },
+    updateFromGameObject() {}, setCircle() { return this; }, setAllowGravity() { return this; },
     setImmovable() { return this; }, setBounce() { return this; },
     setVelocity(x, y) { this.velocity = {x,y}; return this; },
     reset(x, y) { obj.setPosition(x, y); }

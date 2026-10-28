@@ -16,9 +16,9 @@ function load(storage) {
   return () => {
     const scene = new context.TestScene();
     const overlap = [];
-    const shape = (x,y) => ({ x,y, setPosition() { return this; }, setVisible() { return this; }, setOrigin() { return this; },
+    const shape = (x,y) => ({ x,y, setRadius() { return this; }, setPosition() { return this; }, setVisible() { return this; }, setOrigin() { return this; },
       body: { setCollideWorldBounds() { return this; }, setAllowGravity() { return this; }, setImmovable() { return this; }, setBounce() {}, setVelocity() {},
-        setCircle() {}, reset() {} } });
+        updateFromGameObject() {}, setCircle() {}, reset() {} } });
     scene.time = { now: 0 };
     scene.add = { grid() {}, text: () => ({ setText() { return this; }, setPosition() { return this; }, setVisible() { return this; }, setOrigin() { return this; } }), rectangle: shape, circle: shape };
     scene.physics = { world: { setBounds() {} }, pause() {}, add: {
