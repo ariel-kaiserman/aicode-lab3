@@ -103,6 +103,7 @@ class CoinDash extends Phaser.Scene {
       this.player2.body.setCollideWorldBounds(true);
       this.players.push(this.player2);
     }
+    this.createPulseEnemy();
     this.coin = this.add.circle(100, 100, 9, c.colors.coin);
     this.physics.add.existing(this.coin);
     this.coin.body.setCircle(9);
@@ -142,6 +143,37 @@ class CoinDash extends Phaser.Scene {
       { font: '24px monospace', color: '#ffffff', backgroundColor: '#0a1120', padding: { x: 24, y: 16 } }
     ).setOrigin(0.5).setVisible(false);
     this.input.keyboard.on('keydown-P', event => { if (!event || !event.repeat) this.togglePause(); });
+  }
+
+  createPulseEnemy() {
+    const c = COIN_DASH;
+    const pulse = c.pulseEnemy;
+    this.pulseStartedAt = this.time.now;
+    this.pulseEnemy = this.add.circle(c.width * 0.25, c.height - 90, pulse.minRadius, pulse.color);
+    this.physics.add.existing(this.pulseEnemy);
+    this.pulseEnemy.body.setAllowGravity(false).setImmovable(true);
+    this.pulseEnemy.body.moves = false;
+    this.updatePulseEnemy();
+    this.players.forEach((player, index) => {
+      this.physics.add.overlap(player, this.pulseEnemy, () => {
+        if (this.paused) return;
+        this.finish(this.mode === 'duo'
+          ? `The pulse enemy caught Player ${index + 1}!` : 'The pulse enemy caught you!');
+      });
+    });
+  }
+
+  updatePulseEnemy() {
+    if (this.finished || this.paused) return;
+    const pulse = COIN_DASH.pulseEnemy;
+    const phase = (this.time.now - this.pulseStartedAt) / (pulse.cycleSeconds * 1000);
+    const radius = Math.round(pulse.minRadius + (pulse.maxRadius - pulse.minRadius)
+      * (1 - Math.cos(phase * Math.PI * 2)) / 2);
+    // Arc.setRadius updates its display origin. Match the body to that new origin;
+    // integer radii avoid Arcade's floor(halfWidth) shifting its collision center.
+    this.pulseEnemy.setRadius(radius);
+    this.pulseEnemy.body.setCircle(radius, 0, 0);
+    this.pulseEnemy.body.updateFromGameObject();
   }
 
   createChaser() {
@@ -193,6 +225,7 @@ class CoinDash extends Phaser.Scene {
       this.physics.pause();
     } else {
       const pauseDuration = this.time.now - this.pausedAt;
+      this.pulseStartedAt += pauseDuration;
       this.deadline = this.time.now + this.remaining;
       if (this.boostUntil > this.pausedAt) this.boostUntil += pauseDuration;
       if (this.boostUntil2 > this.pausedAt) this.boostUntil2 += pauseDuration;
@@ -209,7 +242,8 @@ class CoinDash extends Phaser.Scene {
     do {
       x = Phaser.Math.Between(25, c.width - 25);
       y = Phaser.Math.Between(90, c.height - 25);
-    } while (this.players.some(player => Phaser.Math.Distance.Between(x, y, player.x, player.y) < 60));
+    } while (this.players.some(player => Phaser.Math.Distance.Between(x, y, player.x, player.y) < 60)
+      || Phaser.Math.Distance.Between(x, y, this.pulseEnemy.x, this.pulseEnemy.y) < c.pulseEnemy.maxRadius + 20);
     this.coin.setPosition(x, y);
     this.coin.body.reset(x, y);
   }
@@ -221,7 +255,8 @@ class CoinDash extends Phaser.Scene {
       x = Phaser.Math.Between(30, c.width - 30);
       y = Phaser.Math.Between(95, c.height - 30);
     } while (this.players.some(player => Phaser.Math.Distance.Between(x, y, player.x, player.y) < 80)
-      || Phaser.Math.Distance.Between(x, y, this.coin.x, this.coin.y) < 40);
+      || Phaser.Math.Distance.Between(x, y, this.coin.x, this.coin.y) < 40
+      || Phaser.Math.Distance.Between(x, y, this.pulseEnemy.x, this.pulseEnemy.y) < c.pulseEnemy.maxRadius + 25);
     this.speedPowerUp.setPosition(x, y).setVisible(true);
     this.speedPowerUp.body.reset(x, y);
     this.speedPowerUp.body.enable = true;
@@ -241,6 +276,7 @@ class CoinDash extends Phaser.Scene {
 
   update() {
     if (this.finished || this.paused) return;
+    this.updatePulseEnemy();
     this.updateChaser();
     const boosts = [this.boostUntil, this.boostUntil2].map(until =>
       Math.max(0, Math.ceil((until - this.time.now) / 1000)));
