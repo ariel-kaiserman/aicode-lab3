@@ -65,6 +65,15 @@ const coin1=overlaps.find(o=>o.a===scene.player&&o.b===scene.coin).fn;
 const coin2=overlaps.find(o=>o.a===scene.player2&&o.b===scene.coin).fn;
 coin1();coin2();coin2();
 assert.equal(scene.score,1);assert.equal(scene.score2,2);
+assert.equal(scene.coins.length,3,'duo keeps three coins on the field');
+const untouched=scene.coins.slice(0,2).map(coin=>({x:coin.x,y:coin.y}));
+const thirdCoin=scene.coins[2];
+overlaps.find(o=>o.a===scene.player2&&o.b===thirdCoin).fn();
+assert.equal(scene.score2,3,'player two can collect the third coin');
+assert.deepEqual(scene.coins.slice(0,2).map(coin=>({x:coin.x,y:coin.y})),untouched,
+  'collecting one coin leaves the others in place');
+assert.equal(scene.coins.length,3,'collected coin respawns without removing a coin');
+
 const pick2=overlaps.find(o=>o.a===scene.player2&&o.b===scene.speedPowerUp).fn;
 pick2();scene.update();
 assert.equal(scene.boostUntil,0);
@@ -90,7 +99,7 @@ const drone2=overlaps.filter(o=>o.a===scene.player2&&o.b===scene.drones).pop().f
 drone2();assert.match(texts[texts.length-1],/A drone caught Player 2!/);
 modeSelect.value='solo';modeSelect.change();
 assert.equal(restarted.mode,'solo');
-scene.create(restarted);assert.equal(scene.players.length,1);assert.equal(scene.mode,'solo');
+scene.create(restarted);assert.equal(scene.coins.length,1,'solo has one coin');assert.equal(scene.players.length,1);assert.equal(scene.mode,'solo');
 scene.level=4;modeSelect.value='duo';modeSelect.change();
 assert.equal(restarted.level,4);scene.create(restarted);
 keyboardEvents['keydown-R']();assert.equal(restarted.mode,'duo');assert.equal(restarted.level,4);

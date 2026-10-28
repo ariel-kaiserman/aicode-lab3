@@ -9,6 +9,7 @@ window.COIN_DASH = {
   speedPowerUpRespawnSeconds: 8,
   droneSpeed: 105,
   droneCount: 3,
+  duoCoinCount: 3,
   levels: [
     { droneCount: 2, droneSpeed: 80 },
     { droneCount: 3, droneSpeed: 105 },
@@ -19,5 +20,8 @@ window.COIN_DASH = {
   chaser: { color: 0xb875ff, baseSpeed: 55, speedPerLevel: 5, maxSpeed: 75 },
   pulseEnemy: { minRadius: 12, maxRadius: 34, cycleSeconds: 3, speed: 65, color: 0xff8c42 },
   sound: { enabled: true, volume: 0.2 },
-  colors: { background: 0x101c31, player: 0x71e8ce, player2: 0xffa94d, coin: 0xffd166, speedPowerUp: 0x5ac8ff, drone: 0xff657a }
+  // Pastel "paper" look: cream page, notebook grid, pastel stickers outlined in dark ink.
+  colors: { background: 0xfbf6ea, player: 0x9ee6c9, player2: 0xffc08a, coin: 0xffd86b, speedPowerUp: 0xa8d8ff, drone: 0xff9eae,
+    grid: 0xc9dbee, margin: 0xf3a9b9, ink: 0x3b3646, boostText: 0x2c64a8, paper: 0xfffdf7, shadow: 0x3b3646 },
+  fontFamily: 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", "Segoe UI", system-ui, sans-serif'
 };
