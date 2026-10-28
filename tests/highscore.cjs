@@ -8,7 +8,7 @@ const key = 'coin-dash.high-score';
 function load(storage) {
   const context = { window: { localStorage: storage }, Phaser: {
     Scene: class {}, Game: class {}, AUTO: 0, Scale: { FIT: 0, CENTER_HORIZONTALLY: 0 },
-    Math: { Between: min => min, Distance: { Between: (x,y,a,b) => Math.hypot(x-a,y-b) } }
+    Math: { Between: min => min, Distance: { Between: () => 100 } }
   } };
   context.window = Object.assign(context, context.window);
   vm.createContext(context);
@@ -16,17 +16,17 @@ function load(storage) {
   return () => {
     const scene = new context.TestScene();
     const overlap = [];
-    const shape = (x,y) => ({ x,y, setPosition() {}, setOrigin() { return this; },
-      body: { setCollideWorldBounds() { return this; }, setBounce() {}, setVelocity() {},
+    const shape = (x,y) => ({ x,y, setPosition() { return this; }, setVisible() { return this; }, setOrigin() { return this; },
+      body: { setCollideWorldBounds() { return this; }, setAllowGravity() { return this; }, setImmovable() { return this; }, setBounce() {}, setVelocity() {},
         setCircle() {}, reset() {} } });
     scene.time = { now: 0 };
-    scene.add = { grid() {}, text: () => ({ setText() {}, setOrigin() {} }), rectangle: shape, circle: shape };
+    scene.add = { grid() {}, text: () => ({ setText() { return this; }, setPosition() { return this; }, setVisible() { return this; }, setOrigin() { return this; } }), rectangle: shape, circle: shape };
     scene.physics = { world: { setBounds() {} }, pause() {}, add: {
-      existing() {}, group: () => ({ add() {} }), overlap: (a,b,fn) => overlap.push(fn)
+      existing() {}, group: () => ({ add() {} }), overlap: (a,b,fn) => overlap.push({ a, b, fn })
     } };
     scene.input = { keyboard: { createCursorKeys() {}, addKeys() {}, on() {} } };
     scene.create();
-    return { scene, coin: overlap[0] };
+    return { scene, coin: overlap.find(entry => entry.b === scene.coin).fn };
   };
 }
 let saved = {};
