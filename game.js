@@ -46,11 +46,22 @@ function playTones(notes, type) {
     }
   } catch (e) { /* sound is optional */ }
 }
+
+const hex = n => '#' + n.toString(16).padStart(6, '0');
+const textStyle = (size, color, extra) => Object.assign(
+  { fontFamily: COIN_DASH.fontFamily, fontSize: `${size}px`, fontStyle: 'bold', color: hex(color) }, extra);
+// Rounded corners and an ink outline give shapes a sticker look; guarded for builds/mocks without them.
+function sticker(shape, radius, outline = COIN_DASH.colors.ink) {
+  if (radius && shape.setRounded) shape.setRounded(radius);
+  if (outline !== null && shape.setStrokeStyle) shape.setStrokeStyle(3, outline);
+  return shape;
+}
+
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
   create() {
-    const c = COIN_DASH;
+    const c = COIN_DASH, k = c.colors;
     this.score = 0;
     this.bestScore = readHighScore();
     this.finished = false;
@@ -59,30 +70,26 @@ class CoinDash extends Phaser.Scene {
     this.paused = false;
     this.deadline = this.time.now + c.roundSeconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
-    this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
-      c.colors.background, 1, 0x24334b, 0.45);
-    this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
-    this.player = this.add.rectangle(c.width / 2, c.height / 2, 24, 24, c.colors.player);
+    this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40, k.background, 1, k.grid, 0.6);
+    this.add.rectangle(c.width / 2, 44, c.width, 2, k.margin);
+    this.hud = this.add.text(18, 12, '', textStyle(18, k.ink));
+    this.player = sticker(this.add.rectangle(c.width / 2, c.height / 2, 24, 24, k.player), 7);
     this.physics.add.existing(this.player);
     this.player.body.setCollideWorldBounds(true);
-    this.coin = this.add.circle(100, 100, 9, c.colors.coin);
+    this.coin = sticker(this.add.circle(100, 100, 9, k.coin));
     this.physics.add.existing(this.coin);
     this.coin.body.setCircle(9);
     this.placeCoin();
-    this.speedPowerUp = this.add.rectangle(0, 0, 24, 24, c.colors.speedPowerUp);
+    this.speedPowerUp = sticker(this.add.rectangle(0, 0, 24, 24, k.speedPowerUp), 7);
     this.physics.add.existing(this.speedPowerUp);
     this.speedPowerUp.body.setAllowGravity(false).setImmovable(true);
-    this.speedPowerUpLabel = this.add.text(0, 0, '>>', {
-      font: 'bold 16px monospace', color: '#071521'
-    }).setOrigin(0.5);
-    this.boostHud = this.add.text(c.width - 18, 12, '', {
-      font: '18px monospace', color: '#5ac8ff'
-    }).setOrigin(1, 0);
+    this.speedPowerUpLabel = this.add.text(0, 0, '>>', textStyle(15, k.ink)).setOrigin(0.5);
+    this.boostHud = this.add.text(c.width - 18, 12, '', textStyle(18, k.boostText)).setOrigin(1, 0);
     this.placeSpeedPowerUp();
     this.physics.add.overlap(this.player, this.speedPowerUp, () => this.collectSpeedPowerUp());
     this.drones = this.physics.add.group();
     for (let i = 0; i < c.droneCount; i++) {
-      const drone = this.add.rectangle(90 + i * 270, 100, 26, 26, c.colors.drone);
+      const drone = sticker(this.add.rectangle(90 + i * 270, 100, 26, 26, k.drone), 8);
       this.drones.add(drone);
       drone.body.setCollideWorldBounds(true).setBounce(1, 1);
       const angle = (35 + i * 105) * Math.PI / 180;
@@ -99,10 +106,18 @@ class CoinDash extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
-    this.pauseOverlay = this.add.text(c.width / 2, c.height / 2, 'Paused — press P to resume',
-      { font: '24px monospace', color: '#ffffff', backgroundColor: '#0a1120', padding: { x: 24, y: 16 } }
-    ).setOrigin(0.5).setVisible(false);
+    this.pauseCard = this.card(420, 84, false);
+    this.pauseOverlay = this.add.text(c.width / 2, c.height / 2, 'Paused — press P to resume', textStyle(24, k.ink))
+      .setOrigin(0.5).setVisible(false);
     this.input.keyboard.on('keydown-P', () => this.togglePause());
+  }
+
+  // A rounded paper card with a soft offset shadow, centred on the field.
+  card(w, h, visible = true) {
+    const c = COIN_DASH, k = c.colors;
+    return [this.add.rectangle(c.width / 2 + 6, c.height / 2 + 7, w, h, k.shadow, 0.16),
+      this.add.rectangle(c.width / 2, c.height / 2, w, h, k.paper)]
+      .map((shape, i) => sticker(shape, 18, i ? k.ink : null).setVisible(visible));
   }
 
   togglePause() {
@@ -120,6 +135,7 @@ class CoinDash extends Phaser.Scene {
       if (this.powerUpRespawnAt > this.pausedAt) this.powerUpRespawnAt += pauseDuration;
       this.physics.resume();
     }
+    this.pauseCard.forEach(shape => shape.setVisible(this.paused));
     this.pauseOverlay.setVisible(this.paused);
   }
 
@@ -189,10 +205,10 @@ class CoinDash extends Phaser.Scene {
     if (reason === 'Time is up!') playTones([[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.35]], 'triangle');
     else playTones([[220, 0.16], [165, 0.16], [110, 0.4]], 'sawtooth');
     const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 190, 0x0a1120, 0.95);
+    this.card(460, 200);
     this.add.text(c.width / 2, c.height / 2,
       `${reason}\n${this.score} coins collected\nBest: ${this.bestScore} coins\nPress R to try again`,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
+      textStyle(24, c.colors.ink, { align: 'center', lineSpacing: 12 })
     ).setOrigin(0.5);
   }
 }
