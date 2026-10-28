@@ -1,7 +1,8 @@
 * { box-sizing: border-box; }
-body { margin: 0; background: #0a1120; color: #e5edf7; font: 17px/1.5 system-ui, sans-serif; }
+body { margin: 0; background: #f6efe0 radial-gradient(#e3d7bf 1px, transparent 1.5px) 0 0 / 22px 22px; color: #3b3646; font: 17px/1.5 ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", "Segoe UI", system-ui, sans-serif; }
 main { max-width: 850px; margin: 30px auto; padding: 0 20px; }
-header > p:first-child { color: #71e8ce; font-size: 12px; letter-spacing: .15em; }
-h1 { margin: 0; font-size: 40px; }
-#game { border: 1px solid #34445e; border-radius: 12px; overflow: hidden; }
+header > p:first-child { display: inline-block; margin: 0 0 10px; padding: 2px 12px; background: #ffd6df; border: 2px solid #3b3646; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .15em; }
+h1 { width: fit-content; margin: 0; font-size: 40px; line-height: 1.2; background: linear-gradient(transparent 60%, #ffe28f 60%); }
+#game { border: 3px solid #3b3646; border-radius: 16px; overflow: hidden; background: #fbf6ea; box-shadow: 6px 7px 0 rgba(59, 54, 70, .16), 0 14px 30px rgba(59, 54, 70, .12); }
 canvas { display: block; }
+strong { color: #2c2833; }
